@@ -16,7 +16,7 @@ class MapScreenPageState extends State<MapScreenPage> {
 
   MapboxMapController? controller;
   final watercolorRasterId = "watercolorRaster";
-  int selectedStyleId = 3;
+  int selectedStyleId = 2;
 
   _onMapCreated(MapboxMapController controller) {
     this.controller = controller;
@@ -39,18 +39,37 @@ class MapScreenPageState extends State<MapScreenPage> {
 
   static Future<void> addGeojsonCluster(MapboxMapController controller) async {
     await controller.addSource(
-        "earthquakes",
+        "health",
         GeojsonSourceProperties(
             data:
-            'https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson',
+            'https://admin.nationalgeoportal.gov.np/geoserver/geonode/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=geonode:All_Nepal_Final_short&outputFormat=application/json',
+            // 'https://admin.nationalgeoportal.gov.np/geoserver/geonode/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=geonode:First_order_controlPoint0&outputFormat=application/json',
+            // 'https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson',
             cluster: true,
             clusterMaxZoom: 14, // Max zoom to cluster points on
             clusterRadius:
             50 // Radius of each cluster when clustering points (defaults to 50)
-        ));
+        )
+    );
+
+    await controller.addSource(
+        "police",
+        GeojsonSourceProperties(
+            data:
+            // 'https://admin.nationalgeoportal.gov.np/geoserver/geonode/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=geonode:All_Nepal_Final_short&outputFormat=application/json',
+            'https://admin.nationalgeoportal.gov.np/geoserver/geonode/ows?service=WFS&version=1.0.0&request=GetFeature&typeName=geonode:First_order_controlPoint0&outputFormat=application/json',
+            // 'https://docs.mapbox.com/mapbox-gl-js/assets/earthquakes.geojson',
+            cluster: true,
+            clusterMaxZoom: 14, // Max zoom to cluster points on
+            clusterRadius:
+            50 // Radius of each cluster when clustering points (defaults to 50)
+        )
+    );
+
+
     await controller.addLayer(
-        "earthquakes",
-        "earthquakes-circles",
+        "health",
+        "health-circles",
         CircleLayerProperties(circleColor: [
           Expressions.step,
           [Expressions.get, 'point_count'],
@@ -68,13 +87,46 @@ class MapScreenPageState extends State<MapScreenPage> {
           750,
           40
         ]));
+
+    controller.addLayer(
+        "police",
+        "police-circles",
+        CircleLayerProperties(circleColor: [
+          Expressions.step,
+          [Expressions.get, 'point_count'],
+          '#5163d6',
+          100,
+          '#715875',
+          750,
+          '#8297b1'
+        ], circleRadius: [
+          Expressions.step,
+          [Expressions.get, 'point_count'],
+          20,
+          100,
+          30,
+          750,
+          40
+        ]));
+
     await controller.addLayer(
-        "earthquakes",
-        "earthquakes-count",
+        "health",
+        "health-count",
         SymbolLayerProperties(
           textField: [Expressions.get, 'point_count_abbreviated'],
           textFont: ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
           textSize: 12,
+          // iconColor: Colors.red
+        ));
+
+    await controller.addLayer(
+        "police",
+        "police-count",
+        SymbolLayerProperties(
+          textField: [Expressions.get, 'point_count_abbreviated'],
+          textFont: ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
+          textSize: 12,
+          // iconColor: Colors.blue
         ));
   }
 
@@ -166,15 +218,15 @@ class MapScreenPageState extends State<MapScreenPage> {
     ),
     StyleInfo(
       name: "Geojson cluster",
-      baseStyle: MapboxStyles.SATELLITE_STREETS,
+      baseStyle: MapboxStyles.LIGHT,
       addDetails: addGeojsonCluster,
-      position: CameraPosition(target: LatLng(33.5, -118.1), zoom: 5),
+      position: CameraPosition(target: LatLng(27.7172, 85.3240), zoom: 9),
     ),
     StyleInfo(
       name: "Raster",
       baseStyle: MapboxStyles.LIGHT,
       addDetails: addRaster,
-      position: CameraPosition(target: LatLng(27.7172, 85.3240), zoom: 10),
+      position: CameraPosition(target: LatLng(27.7172, 85.3240), zoom:5 ),
     ),
     StyleInfo(
       name: "Image",
@@ -216,8 +268,10 @@ class MapScreenPageState extends State<MapScreenPage> {
           onMapCreated: _onMapCreated,
           onStyleLoadedCallback: _onStyleLoadedCallback,
           initialCameraPosition: const CameraPosition(target: LatLng(27.7172, 85.3240),
-          zoom: 10.0
-          )),
+          zoom: 10.0,
+          ),
+      // cameraTargetBounds: CameraTargetBounds(LatLngBounds( southwest: const LatLng(26.3978980576, 80.0884245137), northeast: const LatLng(26.3978980576, 80.0884245137))),
+      ),
     );
   }
 }

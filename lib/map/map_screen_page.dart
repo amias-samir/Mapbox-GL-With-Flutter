@@ -1,5 +1,8 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geoportal_social_services_app/map/styles_info.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
 
@@ -20,6 +23,10 @@ class MapScreenPageState extends State<MapScreenPage> {
 
   _onMapCreated(MapboxMapController controller) {
     this.controller = controller;
+
+    controller.onFeatureTapped.add(onFeatureTap);
+
+
   }
 
   static Future<void> addRaster(MapboxMapController controller) async {
@@ -38,6 +45,37 @@ class MapScreenPageState extends State<MapScreenPage> {
   }
 
   static Future<void> addGeojsonCluster(MapboxMapController controller) async {
+
+    await controller.addSource(
+      "web-map-source",
+      RasterSourceProperties(
+          tiles: [
+            'http://202.45.146.139:8080/geoserver/GIID/wms?service=WMS&version=1.1.1&request=GetMap&layers=basemap_group&bbox={bbox-epsg-3857}&width=256&height=256&srs=EPSG:3857&format=image/png&transparent=true'
+          ],
+          tileSize: 256,
+          attribution:
+          'Map tiles by <a target="_top" rel="noopener" href="http://stamen.com">Stamen Design</a>, under <a target="_top" rel="noopener" href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a target="_top" rel="noopener" href="http://openstreetmap.org">OpenStreetMap</a>, under <a target="_top" rel="noopener" href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>'),
+    );
+    await controller.addLayer(
+        "web-map-source", "web-map-source", RasterLayerProperties());
+
+    await controller.addSource(
+        "terrain",
+        VectorSourceProperties(
+          url: "https://api.maptiler.com/tiles/ch-swisstopo-lbm/{z}/{x}/{y}.pbf?key=yVXqeQeRSeuQqtFoouno",
+        ));
+
+    await controller.addLayer(
+        "terrain",
+        "contour",
+        LineLayerProperties(
+          lineColor: "#ff69b4",
+          lineWidth: 1,
+          lineCap: "round",
+          lineJoin: "round",
+        ),
+        sourceLayer: "contour");
+
     await controller.addSource(
         "health",
         GeojsonSourceProperties(
@@ -147,6 +185,8 @@ class MapScreenPageState extends State<MapScreenPage> {
           lineJoin: "round",
         ),
         sourceLayer: "contour");
+
+    // https://api.maptiler.com/tiles/ch-swisstopo-lbm/{z}/{x}/{y}.pbf?key=yVXqeQeRSeuQqtFoouno
   }
 
   static Future<void> addImage(MapboxMapController controller) async {
@@ -251,6 +291,42 @@ class MapScreenPageState extends State<MapScreenPage> {
     controller!
         .animateCamera(CameraUpdate.newCameraPosition(styleInfo.position));
   }
+
+
+
+   onFeatureTap(dynamic featureId, Point point, LatLng latLng) {
+    debugPrint('onFeatureTap ID: ${featureId.toString()}  \n', );
+    debugPrint('onFeatureTap Point:  X: ${point.x} ,  Y: ${point.y}  \n', );
+    debugPrint('onFeatureTap LatLng: ${latLng.toString()}  \n', );
+
+    // debugPrint('onFeatureTap layerProperties: ${controller!.symbolManager!.allLayerProperties.single.toJson()}  \n', );
+
+
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   SnackBar(
+    //     // action: SnackBarAction(
+    //     //   label: 'Action',
+    //     //   onPressed: () {
+    //     //     // Code to execute.
+    //     //   },
+    //     // ),
+    //     content: Text('Feature ID: ${featureId.toString()} \n '
+    //         'Coordinates: ${latLng.toString()}'),
+    //     duration: const Duration(milliseconds: 1500),
+    //     width: 280.0, // Width of the SnackBar.
+    //     padding: const EdgeInsets.symmetric(
+    //       horizontal: 8.0, // Inner padding for SnackBar content.
+    //     ),
+    //     behavior: SnackBarBehavior.floating,
+    //     shape: RoundedRectangleBorder(
+    //       borderRadius: BorderRadius.circular(10.0),
+    //     ),
+    //   ),
+    // );
+
+     Fluttertoast.showToast(msg: 'Feature ID: ${featureId.toString()} \n '
+         'Coordinates: ${latLng.toString()}');
+   }
 
 
   @override

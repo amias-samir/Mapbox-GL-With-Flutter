@@ -69,7 +69,11 @@ class _SplashState extends State<Splash> {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.black,
-      child: Center(child: Image.asset('assets/image/splash.png')),
+      child: Center(child: Stack(children: [
+        Image.asset('assets/image/splash_bg_img.jpg', fit: BoxFit.cover,),
+
+        const Center(child: Text('Geoportal Social \n Services App', style: TextStyle(color: Colors.orangeAccent),),)
+      ],)),
     );
   }
 }

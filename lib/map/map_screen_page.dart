@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -19,14 +20,21 @@ class MapScreenPageState extends State<MapScreenPage> {
 
   MapboxMapController? controller;
   final watercolorRasterId = "watercolorRaster";
-  int selectedStyleId = 2;
+  int selectedStyleId = 0;
 
-  _onMapCreated(MapboxMapController controller) {
+  _onMapCreated(MapboxMapController controller)   {
     this.controller = controller;
 
     controller.onFeatureTapped.add(onFeatureTap);
 
 
+  }
+
+
+  @override
+  void initState() {
+    super.initState();
+    getStyleJson();
   }
 
   static Future<void> addRaster(MapboxMapController controller) async {
@@ -40,8 +48,7 @@ class MapScreenPageState extends State<MapScreenPage> {
           attribution:
           'Map tiles by <a target="_top" rel="noopener" href="http://stamen.com">Stamen Design</a>, under <a target="_top" rel="noopener" href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a target="_top" rel="noopener" href="http://openstreetmap.org">OpenStreetMap</a>, under <a target="_top" rel="noopener" href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>'),
     );
-    await controller.addLayer(
-        "web-map-source", "web-map-source", RasterLayerProperties());
+    await controller.addLayer("web-map-source", "web-map-source", RasterLayerProperties());
   }
 
   static Future<void> addGeojsonCluster(MapboxMapController controller) async {
@@ -169,24 +176,32 @@ class MapScreenPageState extends State<MapScreenPage> {
   }
 
   static Future<void> addVector(MapboxMapController controller) async {
+
+
     await controller.addSource(
-        "terrain",
-        VectorSourceProperties(
-          url: "mapbox://mapbox.mapbox-terrain-v2",
+        "default",
+        const VectorSourceProperties(
+          // url: "mapbox://mapbox.mapbox-terrain-v2",
+          // url: "https://api.maptiler.com/tiles/countries/{z}/{x}/{y}.pbf?key=N0tCjYHaAtkInRGtIr0v",
+          tiles: ["https://assessment.naxa.com.np/api/site_vectortile/{z}/{x}/{y}?project=6"],
+          scheme: 'xyz',
+          promoteId: ''
+          // url: "// https://api.maptiler.com/tiles/ch-swisstopo-lbm/{z}/{x}/{y}.pbf?key=yVXqeQeRSeuQqtFoouno",
         ));
 
     await controller.addLayer(
-        "terrain",
-        "contour",
-        LineLayerProperties(
-          lineColor: "#ff69b4",
-          lineWidth: 1,
-          lineCap: "round",
-          lineJoin: "round",
+        "default",
+        "customLayer",
+        const FillLayerProperties(
+          fillColor: '#9f69b4'
+          // lineColor: "#9f69b4",
+          // lineWidth: 1,
+          // lineCap: "round",
+          // lineJoin: "round",
         ),
-        sourceLayer: "contour");
+      sourceLayer: 'default'
+        );
 
-    // https://api.maptiler.com/tiles/ch-swisstopo-lbm/{z}/{x}/{y}.pbf?key=yVXqeQeRSeuQqtFoouno
   }
 
   static Future<void> addImage(MapboxMapController controller) async {
@@ -243,12 +258,20 @@ class MapScreenPageState extends State<MapScreenPage> {
     );
   }
 
+  var jsonResult;
+  getStyleJson () async{
+    String data = await DefaultAssetBundle.of(context).loadString("assets/json/mapbox_style.json");
+     jsonResult = jsonDecode(data);
+  }
+
+  // Map stylesJson = json.decode('{"sources": {"": {"attribution": "<a href=<a href="http://www.openmaptiles.org/" target="_blank">&copy; OpenMapTiles</a> <a href="http://www.openstreetmap.org/about/" target="_blank">&copy; OpenStreetMap contributors</a>","tiles": ["https://pccmis.karnali.gov.np/api/v1/layer_vectortile/{z}/{x}/{y}/?layer=municipality&pro_code=3"],"type": "vector"}},"layers": {"id": "polyfill","layout": {"visibility": "visible"},"paint": {"fill-color": "hsl(0, 100%, 50%)","fill-opacity": 0.3,"line-color": "hsl(205, 56%, 73%)"},"source": "default","source-layer": "default","type": "fill"},{"id": "polyline","type": "line","metadata": {},"source": "default","source-layer": "default","layout": {"line-cap": "round","line-join": "round"},"paint": {"line-color": "hsl(47, 26%, 88%)","line-width": {"base": 1.2,"stops": [[15, 1],[17, 4]]}}}]}');
+
   static const _stylesAndLoaders = [
     StyleInfo(
       name: "Vector",
       baseStyle: MapboxStyles.LIGHT,
       addDetails: addVector,
-      position: CameraPosition(target: LatLng(33.3832, -118.4333), zoom: 12),
+      position: CameraPosition(target: LatLng(28.9873, 80.1652), zoom: 12),
     ),
     StyleInfo(
       name: "Dem",
@@ -333,6 +356,7 @@ class MapScreenPageState extends State<MapScreenPage> {
   Widget build(BuildContext context) {
 
     final styleInfo = _stylesAndLoaders[selectedStyleId];
+
     final nextName =
         _stylesAndLoaders[(selectedStyleId + 1) % _stylesAndLoaders.length]
             .name;
@@ -343,7 +367,8 @@ class MapScreenPageState extends State<MapScreenPage> {
           accessToken: 'pk.eyJ1IjoicGVhY2VuZXBhbCIsImEiOiJjajZhYzJ4ZmoxMWt4MzJsZ2NnMmpsejl4In0.rb2hYqaioM1-09E83J-SaA',
           onMapCreated: _onMapCreated,
           onStyleLoadedCallback: _onStyleLoadedCallback,
-          initialCameraPosition: const CameraPosition(target: LatLng(27.7172, 85.3240),
+          // initialCameraPosition: const CameraPosition(target: LatLng(27.7172, 85.3240),
+          initialCameraPosition: const CameraPosition(target: LatLng(28.987280, 80.1652),
           zoom: 10.0,
           ),
       // cameraTargetBounds: CameraTargetBounds(LatLngBounds( southwest: const LatLng(26.3978980576, 80.0884245137), northeast: const LatLng(26.3978980576, 80.0884245137))),

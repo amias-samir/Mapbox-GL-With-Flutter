@@ -3,7 +3,9 @@ import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_mapbox_navigation/library.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:geoportal_social_services_app/map/map_route_navigation.dart';
 import 'package:geoportal_social_services_app/map/styles_info.dart';
 import 'package:mapbox_gl/mapbox_gl.dart';
 
@@ -19,11 +21,20 @@ class MapScreenPage extends StatefulWidget{
 class MapScreenPageState extends State<MapScreenPage> {
 
   MapboxMapController? controller;
+  MapBoxNavigationViewController? navigationViewController;
+  MapBoxOptions ? _options;
   final watercolorRasterId = "watercolorRaster";
-  int selectedStyleId = 0;
+  int selectedStyleId = 2;
+  MapBoxNavigation? _directions;
+  UserLocation? userLocation;
+
+
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+
 
   _onMapCreated(MapboxMapController controller)   {
     this.controller = controller;
+    
 
     controller.onFeatureTapped.add(onFeatureTap);
 
@@ -34,7 +45,57 @@ class MapScreenPageState extends State<MapScreenPage> {
   @override
   void initState() {
     super.initState();
+    // navigationViewController = MapBoxNavigationViewController(id, (value) { })
+    _directions = MapBoxNavigation(onRouteEvent: _onRouteEvent);
     getStyleJson();
+  }
+
+  var _distanceRemaining;
+  var _durationRemaining;
+  bool? _arrived = false;
+  String? _instruction;
+  bool?  _routeBuilt = false;
+  bool?  _isNavigating= false;
+  bool? _isMultipleStop= false;
+  Future<void> _onRouteEvent(e) async {
+
+    _distanceRemaining = await _directions!.distanceRemaining;
+    _durationRemaining = await _directions!.durationRemaining;
+
+    switch (e.eventType) {
+      case MapBoxEvent.progress_change:
+        var progressEvent = e.data as RouteProgressEvent;
+        _arrived = progressEvent.arrived;
+        if (progressEvent.currentStepInstruction != null)
+          _instruction = progressEvent.currentStepInstruction;
+        break;
+      case MapBoxEvent.route_building:
+      case MapBoxEvent.route_built:
+        _routeBuilt = true;
+        break;
+      case MapBoxEvent.route_build_failed:
+        _routeBuilt = false;
+        break;
+      case MapBoxEvent.navigation_running:
+        _isNavigating = true;
+        break;
+      case MapBoxEvent.on_arrival:
+        _arrived = true;
+        if (_isMultipleStop!) {
+          await Future.delayed(Duration(seconds: 3));
+          await navigationViewController!.finishNavigation();
+        } else {}
+        break;
+      case MapBoxEvent.navigation_finished:
+      case MapBoxEvent.navigation_cancelled:
+        _routeBuilt = false;
+        _isNavigating = false;
+        break;
+      default:
+        break;
+    }
+    //refresh UI
+    setState(() {});
   }
 
   static Future<void> addRaster(MapboxMapController controller) async {
@@ -53,6 +114,25 @@ class MapScreenPageState extends State<MapScreenPage> {
 
   static Future<void> addGeojsonCluster(MapboxMapController controller) async {
 
+
+
+    await controller.addSource(
+        "default",
+        const VectorSourceProperties(
+            tiles: ["https://assessment.naxa.com.np/api/site_vectortile/{z}/{x}/{y}?project=6"],
+            scheme: 'xyz',
+            promoteId: '{default : id}'
+        ));
+
+    await controller.addLayer(
+        "default",
+        "customLayer",
+        const FillLayerProperties(
+            fillColor: '#9f69b4'
+        ),
+        sourceLayer: 'default'
+    );
+
     await controller.addSource(
       "web-map-source",
       RasterSourceProperties(
@@ -64,7 +144,9 @@ class MapScreenPageState extends State<MapScreenPage> {
           'Map tiles by <a target="_top" rel="noopener" href="http://stamen.com">Stamen Design</a>, under <a target="_top" rel="noopener" href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a target="_top" rel="noopener" href="http://openstreetmap.org">OpenStreetMap</a>, under <a target="_top" rel="noopener" href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>'),
     );
     await controller.addLayer(
-        "web-map-source", "web-map-source", RasterLayerProperties());
+        "web-map-source", "web-map-source", RasterLayerProperties(),
+        belowLayerId: 'customLayer');
+
 
     await controller.addSource(
         "terrain",
@@ -181,12 +263,9 @@ class MapScreenPageState extends State<MapScreenPage> {
     await controller.addSource(
         "default",
         const VectorSourceProperties(
-          // url: "mapbox://mapbox.mapbox-terrain-v2",
-          // url: "https://api.maptiler.com/tiles/countries/{z}/{x}/{y}.pbf?key=N0tCjYHaAtkInRGtIr0v",
           tiles: ["https://assessment.naxa.com.np/api/site_vectortile/{z}/{x}/{y}?project=6"],
           scheme: 'xyz',
-          promoteId: ''
-          // url: "// https://api.maptiler.com/tiles/ch-swisstopo-lbm/{z}/{x}/{y}.pbf?key=yVXqeQeRSeuQqtFoouno",
+          promoteId: '{default : id}'
         ));
 
     await controller.addLayer(
@@ -194,10 +273,6 @@ class MapScreenPageState extends State<MapScreenPage> {
         "customLayer",
         const FillLayerProperties(
           fillColor: '#9f69b4'
-          // lineColor: "#9f69b4",
-          // lineWidth: 1,
-          // lineCap: "round",
-          // lineJoin: "round",
         ),
       sourceLayer: 'default'
         );
@@ -317,12 +392,13 @@ class MapScreenPageState extends State<MapScreenPage> {
 
 
 
-   onFeatureTap(dynamic featureId, Point point, LatLng latLng) {
+   onFeatureTap(dynamic featureId, Point point, LatLng latLng) async {
     debugPrint('onFeatureTap ID: ${featureId.toString()}  \n', );
     debugPrint('onFeatureTap Point:  X: ${point.x} ,  Y: ${point.y}  \n', );
     debugPrint('onFeatureTap LatLng: ${latLng.toString()}  \n', );
 
     // debugPrint('onFeatureTap layerProperties: ${controller!.symbolManager!.allLayerProperties.single.toJson()}  \n', );
+
 
 
     // ScaffoldMessenger.of(context).showSnackBar(
@@ -347,9 +423,58 @@ class MapScreenPageState extends State<MapScreenPage> {
     //   ),
     // );
 
+     // showInSnackBar('Feature ID: ${featureId.toString()} \n ''Coordinates: ${latLng.toString()}');
      Fluttertoast.showToast(msg: 'Feature ID: ${featureId.toString()} \n '
          'Coordinates: ${latLng.toString()}');
+
+
+
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(builder: (context) =>  MapRouteNavigationScreen(
+    //     latLngBounds: StartDestinationCoords(northeast:  const LatLng(27.6588, 85.3247),
+    //         southwest: const LatLng(27.69335, 85.3782)),)),
+    // );
+
+    // _options = MapBoxOptions(
+    //     initialLatitude: latLng.latitude,
+    //     initialLongitude: latLng.longitude,
+    //     zoom: 13.0,
+    //     tilt: 0.0,
+    //     bearing: 0.0,
+    //     enableRefresh: false,
+    //     alternatives: true,
+    //     voiceInstructionsEnabled: true,
+    //     bannerInstructionsEnabled: true,
+    //     allowsUTurnAtWayPoints: true,
+    //     mode: MapBoxNavigationMode.drivingWithTraffic,
+    //     mapStyleUrlDay: "https://url_to_day_style",
+    //     mapStyleUrlNight: "https://url_to_night_style",
+    //     units: VoiceUnits.imperial,
+    //     simulateRoute: true,
+    //     language: "en");
+    //
+    // WayPoint ? cityHall ;
+    // if(userLocation != null){
+    //   cityHall = WayPoint(name: "Current", latitude: userLocation!.position.latitude, longitude: userLocation!.position.longitude);
+    // }else{
+    //   cityHall = WayPoint(name: "Current", latitude: 27.721963, longitude: 85.372912);
+    // }
+    // WayPoint ?  downTown = WayPoint(name: "Destination", latitude: latLng.latitude, longitude: latLng.longitude);
+    //
+    // var wayPoints = <WayPoint>[];
+    // wayPoints.add(cityHall);
+    // wayPoints.add(downTown);
+    //
+    // await _directions!.startNavigation(wayPoints: wayPoints, options: _options!);
+
    }
+
+  void showInSnackBar(String value) {
+    _scaffoldKey.currentState?.showSnackBar( SnackBar(content: Text(value),
+    ));
+  }
+
 
 
   @override
@@ -362,16 +487,23 @@ class MapScreenPageState extends State<MapScreenPage> {
             .name;
     // TODO: implement build
     return Scaffold(
-      body: MapboxMap(
-          styleString: styleInfo.baseStyle,
-          accessToken: 'pk.eyJ1IjoicGVhY2VuZXBhbCIsImEiOiJjajZhYzJ4ZmoxMWt4MzJsZ2NnMmpsejl4In0.rb2hYqaioM1-09E83J-SaA',
-          onMapCreated: _onMapCreated,
-          onStyleLoadedCallback: _onStyleLoadedCallback,
-          // initialCameraPosition: const CameraPosition(target: LatLng(27.7172, 85.3240),
-          initialCameraPosition: const CameraPosition(target: LatLng(28.987280, 80.1652),
-          zoom: 10.0,
-          ),
-      // cameraTargetBounds: CameraTargetBounds(LatLngBounds( southwest: const LatLng(26.3978980576, 80.0884245137), northeast: const LatLng(26.3978980576, 80.0884245137))),
+      key: _scaffoldKey,
+      body: SafeArea(
+        child: MapboxMap(
+            styleString: styleInfo.baseStyle,
+            accessToken: 'pk.eyJ1IjoicGVhY2VuZXBhbCIsImEiOiJjajZhYzJ4ZmoxMWt4MzJsZ2NnMmpsejl4In0.rb2hYqaioM1-09E83J-SaA',
+            onMapCreated: _onMapCreated,
+            onStyleLoadedCallback: _onStyleLoadedCallback,
+            // initialCameraPosition: const CameraPosition(target: LatLng(27.7172, 85.3240),
+            initialCameraPosition: const CameraPosition(target: LatLng(28.987280, 80.1652),
+            zoom: 10.0,
+            ),
+        myLocationEnabled: true,
+        onUserLocationUpdated: (userLocation1){
+              userLocation = userLocation1;
+        },
+        // cameraTargetBounds: CameraTargetBounds(LatLngBounds( southwest: const LatLng(26.3978980576, 80.0884245137), northeast: const LatLng(26.3978980576, 80.0884245137))),
+        ),
       ),
     );
   }

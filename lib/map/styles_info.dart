@@ -13,3 +13,15 @@ class StyleInfo {
         required this.position});
 
   }
+
+
+class StartDestinationCoords {
+  final LatLng northeast;
+  final LatLng southwest;
+
+  const StartDestinationCoords(
+      {required this.northeast,
+        required this.southwest,
+});
+
+}

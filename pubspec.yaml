@@ -35,6 +35,7 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.2
   mapbox_gl: ^0.16.0
+  flutter_mapbox_navigation: ^0.0.26
   flutter_native_splash: ^2.0.2
   cached_network_image: ^3.2.0
   shared_preferences: ^2.0.13
@@ -95,17 +96,20 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
-  #   - family: Trajan Pro
-  #     fonts:
-  #       - asset: fonts/TrajanPro.ttf
-  #       - asset: fonts/TrajanPro_Bold.ttf
-  #         weight: 700
+fonts:
+ - family: Taviraj
+   fonts:
+     - asset: fonts/Taviraj-Medium.ttf
+       style: regular
+       weight: 500
+ - family: PoppinsSemibold
+   fonts:
+     - asset: fonts/Poppins-Semibold.ttf
+       weight: 600
+ - family: PoppinsRegular
+   fonts:
+     - asset: fonts/Poppins-Regular.ttf
+       style: regular
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages

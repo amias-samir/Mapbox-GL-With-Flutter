@@ -38,4 +38,5 @@ class CustomAppStyle {
   static TextStyle body12pxRegular(BuildContext context) {
   return Theme.of(context).textTheme.displayLarge!.copyWith(fontSize: 12.0, fontWeight: FontWeight.normal, height: 1.5, letterSpacing: 0.0, fontFamily: bodyFontsRegularLabel);
   }
+  
 }

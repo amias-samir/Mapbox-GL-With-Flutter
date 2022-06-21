@@ -68,6 +68,13 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-//    implementation 'com.mapbox.maps:android:9.7.1'
+    implementation 'com.mapbox.maps:android:10.2.0'
+    implementation "com.mapbox.navigation:android:2.2.1"
+    implementation 'com.mapbox.mapboxsdk:mapbox-android-plugin-markerview-v9:0.4.0'
 
+
+}
+
+configurations {
+    all*.exclude group: 'com.mapbox.mapboxsdk', module: 'mapbox-android-telemetry'
 }

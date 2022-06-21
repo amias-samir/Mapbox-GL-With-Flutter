@@ -1,0 +1,49 @@
+{
+  "sources": {
+    "": {
+      "attribution": "<a href=<a href=\"http://www.openmaptiles.org/\" target=\"_blank\">&copy; OpenMapTiles</a> <a href=\"http://www.openstreetmap.org/about/\" target=\"_blank\">&copy; OpenStreetMap contributors</a>",
+      "tiles": [
+        "https://pccmis.karnali.gov.np/api/v1/layer_vectortile/{z}/{x}/{y}/?layer=municipality&pro_code=3"
+      ],
+      "type": "vector"
+    }
+  },
+
+  "layers": [
+    {
+      "id": "polyfill",
+      "layout": {
+        "visibility": "visible"
+      },
+      "paint": {
+        "fill-color": "hsl(0, 100%, 50%)",
+        "fill-opacity": 0.3,
+        "line-color": "hsl(205, 56%, 73%)"
+      },
+      "source": "default",
+      "source-layer": "default",
+      "type": "fill"
+    },
+    {
+      "id": "polyline",
+      "type": "line",
+      "metadata": {},
+      "source": "default",
+      "source-layer": "default",
+      "layout": {
+        "line-cap": "round",
+        "line-join": "round"
+      },
+      "paint": {
+        "line-color": "hsl(47, 26%, 88%)",
+        "line-width": {
+          "base": 1.2,
+          "stops": [
+            [15, 1],
+            [17, 4]
+          ]
+        }
+      }
+    }
+  ]
+}
